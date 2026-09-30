@@ -1981,7 +1981,7 @@ func setupAndStartServer() async throws -> Server {
             let summary = buildCompactSummary(toolName: params.name, params: params, toolResponse: toolResponse, filepath: filepath, fileSize: resultTextString.count, screenshotPath: screenshotPath)
             fputs("log: handler(CallTool): returning compact summary (\(summary.count) chars)\n", stderr)
 
-            return .init(content: [.text(summary)], isError: isError)
+            return .init(content: [.text(text: summary, annotations: nil, _meta: nil)], isError: isError)
 
         } catch is InputGuardCancelled {
             // User pressed Esc — clean up and return cancellation error
@@ -1997,13 +1997,13 @@ func setupAndStartServer() async throws -> Server {
             if let prevApp = savedFrontmostApp, !prevApp.isTerminated {
                 prevApp.activate(options: [])
             }
-            return .init(content: [.text("Cancelled: user pressed Esc to abort '\(params.name)'.")], isError: true)
+            return .init(content: [.text(text: "Cancelled: user pressed Esc to abort '\(params.name)'.", annotations: nil, _meta: nil)], isError: true)
         } catch let error as MCPError {
              fputs("error: handler(CallTool): MCPError occurred processing MCP params for tool '\(params.name)': \(error)\n", stderr)
-             return .init(content: [.text("Error processing parameters for tool '\(params.name)': \(error.localizedDescription)")], isError: true)
+             return .init(content: [.text(text: "Error processing parameters for tool '\(params.name)': \(error.localizedDescription)", annotations: nil, _meta: nil)], isError: true)
         } catch {
              fputs("error: handler(CallTool): Unexpected error occurred setting up call for tool '\(params.name)': \(error)\n", stderr)
-             return .init(content: [.text("Unexpected setup error executing tool '\(params.name)': \(error.localizedDescription)")], isError: true)
+             return .init(content: [.text(text: "Unexpected setup error executing tool '\(params.name)': \(error.localizedDescription)", annotations: nil, _meta: nil)], isError: true)
         }
     }
     fputs("log: setupAndStartServer: registered CallTool handler.\n", stderr)
