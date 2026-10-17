@@ -801,9 +801,8 @@ func buildCompactSummary(toolName: String, params: CallTool.Parameters, toolResp
 
     case "macos-use_type_and_traverse":
         let text = params.arguments?["text"]?.stringValue ?? ""
-        let truncatedText = text.count > 40 ? String(text.prefix(40)) + "..." : text
         let diffSummary = buildDiffSummary(toolResponse.diff)
-        summaryLine = "Typed '\(truncatedText)'. \(diffSummary)"
+        summaryLine = "Typed \(text.count) characters. \(diffSummary)"
 
     case "macos-use_press_key_and_traverse":
         let keyName = params.arguments?["keyName"]?.stringValue ?? "unknown"
@@ -832,9 +831,8 @@ func buildCompactSummary(toolName: String, params: CallTool.Parameters, toolResp
         let x = params.arguments?["x"]?.doubleValue ?? params.arguments?["x"]?.intValue.map(Double.init) ?? 0
         let y = params.arguments?["y"]?.doubleValue ?? params.arguments?["y"]?.intValue.map(Double.init) ?? 0
         let value = params.arguments?["value"]?.stringValue ?? ""
-        let truncatedValue = value.count > 40 ? String(value.prefix(40)) + "..." : value
         let diffSummary = buildDiffSummary(toolResponse.diff)
-        summaryLine = "AX set value '\(truncatedValue)' at (\(Int(x)),\(Int(y))). \(diffSummary)"
+        summaryLine = "AX set a \(value.count)-character value at (\(Int(x)),\(Int(y))). \(diffSummary)"
 
     case "macos-use_press_ax_and_traverse":
         let x = params.arguments?["x"]?.doubleValue ?? params.arguments?["x"]?.intValue.map(Double.init) ?? 0
@@ -902,7 +900,22 @@ func buildCompactSummary(toolName: String, params: CallTool.Parameters, toolResp
         }
     }
 
-    return lines.joined(separator: "\n")
+    // The typed string is often a credential, and the diff's text changes and
+    // new elements echo it back as the field's value.
+    let typed = params.arguments?["text"]?.stringValue ?? params.arguments?["value"]?.stringValue ?? ""
+    return maskTyped(lines.joined(separator: "\n"), typed: typed)
+}
+
+/// Replace every echo of `typed` in `summary` with a mask, including the
+/// truncated prefixes `truncate` and the summary builders cut it to.
+func maskTyped(_ summary: String, typed: String) -> String {
+    // Under four characters the mask would also hit pids, counts and words.
+    guard typed.count >= 4 else { return summary }
+    var out = summary.replacingOccurrences(of: typed, with: "•••")
+    for maxLen in [60, 40] where typed.count > maxLen {
+        out = out.replacingOccurrences(of: String(typed.prefix(maxLen)), with: "•••")
+    }
+    return out
 }
 
 /// Build a short diff summary string like "3 added, 2 removed, 1 modified."
